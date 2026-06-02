@@ -55,6 +55,7 @@ ALL_OS_ARCH = $(foreach arch, ${ALL_ARCH.linux}, linux-$(arch))
 ifeq ($(TARGET), csi)
 build_lustre_source_code = azurelustre
 dockerfile = ./pkg/azurelustreplugin/Dockerfile
+dockerfile_azurelinux3 = ./pkg/azurelustreplugin/Dockerfile.azurelinux3
 else
 build_lustre_source_code = $()
 dockerfile = ./pkg/driverinstaller/Dockerfile_$(TARGET)
@@ -133,10 +134,12 @@ azurelustre-dalec:
 quickcontainer: quicklustre
 	docker build -t $(IMAGE_TAG)-jammy --build-arg srcImage=ubuntu:22.04 --output=type=docker -f $(dockerfile) .
 	docker build -t $(IMAGE_TAG)-noble --build-arg srcImage=ubuntu:24.04 --output=type=docker -f $(dockerfile) .
+	docker build -t $(IMAGE_TAG)-azurelinux3 --output=type=docker -f $(dockerfile_azurelinux3) .
 .PHONY: container
 container: $(build_lustre_source_code)
 	docker build -t $(IMAGE_TAG)-jammy --build-arg srcImage=ubuntu:22.04 --output=type=docker -f $(dockerfile) .
 	docker build -t $(IMAGE_TAG)-noble --build-arg srcImage=ubuntu:24.04 --output=type=docker -f $(dockerfile) .
+	docker build -t $(IMAGE_TAG)-azurelinux3 --output=type=docker -f $(dockerfile_azurelinux3) .
 
 .PHONY: container-linux
 container-linux:
@@ -164,9 +167,13 @@ ifdef CI
 	docker manifest create --amend $(IMAGE_TAG) $(foreach osarch, $(ALL_OS_ARCH), $(IMAGE_TAG)-${osarch})
 	docker manifest push --purge $(IMAGE_TAG)
 	docker manifest inspect $(IMAGE_TAG)
+	docker push $(IMAGE_TAG)-jammy
+	docker push $(IMAGE_TAG)-noble
+	docker push $(IMAGE_TAG)-azurelinux3
 else
 	docker push $(IMAGE_TAG)-jammy
 	docker push $(IMAGE_TAG)-noble
+	docker push $(IMAGE_TAG)-azurelinux3
 endif
 
 .PHONY: push-latest
@@ -175,11 +182,19 @@ ifdef CI
 	docker manifest create --amend $(IMAGE_TAG_LATEST) $(foreach osarch, $(ALL_OS_ARCH), $(IMAGE_TAG)-${osarch})
 	docker manifest push --purge $(IMAGE_TAG_LATEST)
 	docker manifest inspect $(IMAGE_TAG_LATEST)
+	docker tag $(IMAGE_TAG)-jammy $(IMAGE_TAG_LATEST)-jammy
+	docker tag $(IMAGE_TAG)-noble $(IMAGE_TAG_LATEST)-noble
+	docker tag $(IMAGE_TAG)-azurelinux3 $(IMAGE_TAG_LATEST)-azurelinux3
+	docker push $(IMAGE_TAG_LATEST)-jammy
+	docker push $(IMAGE_TAG_LATEST)-noble
+	docker push $(IMAGE_TAG_LATEST)-azurelinux3
 else
 	docker tag $(IMAGE_TAG)-jammy $(IMAGE_TAG_LATEST)-jammy
 	docker tag $(IMAGE_TAG)-noble $(IMAGE_TAG_LATEST)-noble
+	docker tag $(IMAGE_TAG)-azurelinux3 $(IMAGE_TAG_LATEST)-azurelinux3
 	docker push $(IMAGE_TAG_LATEST)-jammy
 	docker push $(IMAGE_TAG_LATEST)-noble
+	docker push $(IMAGE_TAG_LATEST)-azurelinux3
 endif
 
 .PHONY: build-push

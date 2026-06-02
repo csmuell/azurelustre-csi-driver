@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: aml-integration-test
+  name: aml-integration-test-azurelinux3
 spec:
   containers:
     - name: integration-test
@@ -23,5 +23,4 @@ spec:
               - key: kubernetes.azure.com/os-sku-effective
                 operator: In
                 values:
-                  - Ubuntu2204
-                  - Ubuntu2404
+                  - AzureLinux3

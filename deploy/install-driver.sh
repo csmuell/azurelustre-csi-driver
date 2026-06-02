@@ -70,8 +70,10 @@ kubectl apply -f "$repo/csi-azurelustre-driver.yaml"
 kubectl apply -f "$repo/csi-azurelustre-controller.yaml"
 kubectl apply -f "$repo/csi-azurelustre-node-jammy.yaml"
 kubectl apply -f "$repo/csi-azurelustre-node-noble.yaml"
+kubectl apply -f "$repo/csi-azurelustre-node-azurelinux3.yaml"
 
 kubectl rollout status deployment csi-azurelustre-controller -nkube-system --timeout=300s
 kubectl rollout status daemonset csi-azurelustre-node-jammy -nkube-system --timeout=1800s
 kubectl rollout status daemonset csi-azurelustre-node-noble -nkube-system --timeout=1800s
+kubectl rollout status daemonset csi-azurelustre-node-azurelinux3 -nkube-system --timeout=1800s
 echo 'Azure Lustre CSI driver installed successfully.'

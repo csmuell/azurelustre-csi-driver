@@ -38,7 +38,14 @@ function print_versions () {
 	podName=$(kubectl get pods -n kube-system -l app=csi-azurelustre-node -o wide --field-selector=status.phase=Running --sort-by=.metadata.creationTimestamp | grep $PoolName | awk '{print $1}' | head -n 1)
 	echo "Get kernel version and Lustre module version from pod $podName"
 	kernelVersion=$(kubectl exec -n kube-system -it $podName -c azurelustre -- /bin/bash -c "uname -r")
-	module=$(kubectl exec -n kube-system -it $podName -c azurelustre -- /bin/bash -c "dpkg-query -f '\${Package}|\${Version}' -W kmod-lustre-client-*")
+	# Detect OS family to use the right package query
+	osID=$(kubectl exec -n kube-system -it $podName -c azurelustre -- /bin/bash -c ". /etc/os-release; echo \${ID:-}")
+	osID=$(echo "$osID" | tr -d '[:space:]')
+	if [[ "${osID}" == "azurelinux" || "${osID}" == "mariner" ]]; then
+		module=$(kubectl exec -n kube-system -it $podName -c azurelustre -- /bin/bash -c "rpm -qa 'kmod-lustre-client-*' 'amlfs-lustre-client-*' --queryformat '%{NAME}|%{VERSION}\n' | head -n 1")
+	else
+		module=$(kubectl exec -n kube-system -it $podName -c azurelustre -- /bin/bash -c "dpkg-query -f '\${Package}|\${Version}' -W kmod-lustre-client-*")
+	fi
 	modulePkgName=${module%|*}
 	modulePkgVersion=${module#*|}
 
