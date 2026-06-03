@@ -168,11 +168,16 @@ REPOEOF
 
     echo "$(date -u) Installing Lustre client modules: ${installPkgName}"
 
+    # Disable unneeded repos to reduce memory during metadata refresh.
+    # Only amlfs (Lustre packages) and azurelinux-official-base (deps) are needed.
+    # Note: the RPM post-install scriptlet runs depmod which causes a transient
+    # memory spike (~300-400Mi) as it loads System.map and scans all kernel modules.
+    # The DaemonSet memory limit is set to 500Mi to accommodate this.
     tries=3
     sleep_before_retry=15
     install_success=false
     while [[ tries -gt 0 ]]; do
-      if ! tdnf install -y "${installPkgName}"; then
+      if ! tdnf install -y --disablerepo="*" --enablerepo="amlfs" --enablerepo="azurelinux-official-base" "${installPkgName}"; then
         echo "$(date -u) Error installing Lustre client modules. Will try removing existing versions"
         if type lustre_rmmod >/dev/null 2>&1 && ! lustre_rmmod; then
           echo "$(date -u) Error: Unable to unload running module. Are there still mounted Lustre filesystems on this node? Old Lustre client version may continue running."

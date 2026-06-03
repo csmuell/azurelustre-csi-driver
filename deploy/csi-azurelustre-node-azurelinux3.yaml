@@ -161,7 +161,11 @@ spec:
           resources:
             limits:
               cpu: 1
-              memory: 200Mi
+              # Azure Linux 3 needs more memory than Ubuntu (200Mi) during startup.
+              # The tdnf/RPM install runs depmod which loads the full kernel symbol
+              # map (7.5MB) and scans ~1100 modules to rebuild dependencies.
+              # Steady-state usage is ~45Mi; the spike is transient (~10s).
+              memory: 500Mi
             requests:
               cpu: 10m
               memory: 20Mi
