@@ -10,6 +10,8 @@ metadata:
 spec:
   replicas: {{ .Values.controller.replicas }}
   selector:
+    {{- /* spec.selector is immutable: these labels must never change across chart
+       versions, or `helm upgrade` fails with "field is immutable". */}}
     matchLabels:
       app.kubernetes.io/component: controller
       app: csi-azurelustre-controller
@@ -61,6 +63,10 @@ spec:
           resources:
             {{- toYaml .Values.sidecars.livenessProbe.resources | nindent 12 }}
         - name: azurelustre
+          {{- /* The controller never installs the Lustre client (it sets
+             AZURELUSTRE_CSI_INSTALL_LUSTRE_CLIENT=no below), so any OS flavor's
+             image works. `-jammy` is pinned as an arbitrary always-built flavor;
+             if jammy is ever retired, update this suffix to another live flavor. */}}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}-jammy
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:

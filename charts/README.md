@@ -67,7 +67,7 @@ helm uninstall azurelustre -n kube-system
 
 - Dry run rendering: `helm template test ./charts/latest/azurelustre-csi-driver -n kube-system | less`
 - Skip Lustre client install on nodes: `--set node.lustreClient.install=false`
-- Change Lustre client version (per flavor): `--set node.jammy.lustreClient.version=2.15.7 --set node.jammy.lustreClient.shaSuffix=<sha>` (similarly for `node.noble`)
+- Change Lustre client version (per flavor): `--set node.jammy.lustreClient.version=2.15.7 --set node.jammy.lustreClient.shaSuffix=<sha>` (similarly for `node.noble` and `node.azurelinux3`)
 - Force image pull always: `--set image.pullPolicy=Always`
 
 ## latest chart configuration
