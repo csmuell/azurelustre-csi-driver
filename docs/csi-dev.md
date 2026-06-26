@@ -98,6 +98,59 @@ Production images are built through DALEC (see below).
 
 &nbsp;
 
+## Deploy your dev image to a cluster
+
+After `make build-push-latest` (above), point an install at the flavor-suffixed
+tags you just pushed (e.g. `latest-jammy`, `latest-noble`) in your personal ACR.
+Make sure the ACR is attached to the cluster (`az aks update --attach-acr <alias>csiacr`)
+or otherwise pullable.
+
+- **Helm (recommended).** Override `image.repository` / `image.tag`; the chart
+  appends the per-flavor suffix for you (controller -> `-jammy`, node -> `-<flavor>`),
+  so set the *base* repo and tag only:
+
+  ```sh
+  helm install azurelustre ./charts/latest/azurelustre-csi-driver \
+      --namespace kube-system \
+      --set image.repository=<alias>csiacr.azurecr.io/azurelustre-csi \
+      --set-string image.tag=latest
+  ```
+
+  Iterate with `helm upgrade ... --set-string image.tag=<newtag> --set image.pullPolicy=Always`.
+  (`--set-string` keeps tags like `1234` or `v0.5.1` from being coerced to numbers.)
+
+- **kubectl script.** `install-driver.sh local` applies your local `deploy/*.yaml`
+  *as-is* -- the image is **hardcoded** in those manifests
+  (`deploy/csi-azurelustre-controller.yaml`, `deploy/csi-azurelustre-node-*.yaml`),
+  so `local` points at your *manifests*, not your *image*. To run your dev image,
+  edit the `image:` lines to your registry/tag first (keeping the `-<flavor>` suffix).
+  The GNU `sed -i` below assumes Linux (CI's environment); on macOS use `sed -i ''`:
+
+  ```sh
+  sed -i 's#mcr.microsoft.com/oss/v2/kubernetes-csi/azurelustre-csi#<alias>csiacr.azurecr.io/azurelustre-csi#g' \
+      deploy/csi-azurelustre-controller.yaml deploy/csi-azurelustre-node-*.yaml
+  ./deploy/install-driver.sh local
+  ```
+
+  This edits tracked files, so `make verify` will flag the change; revert with
+  `git checkout -- deploy/` when you are done testing.
+
+  To iterate on an *already-installed* driver without touching manifests, patch the
+  running workloads directly (no file edits, nothing to revert). Only the node
+  DaemonSet matching your cluster's OS SKU has running pods, but patching all three
+  is harmless:
+
+  ```sh
+  kubectl -n kube-system set image deployment/csi-azurelustre-controller \
+      azurelustre=<alias>csiacr.azurecr.io/azurelustre-csi:latest-jammy
+  for f in jammy noble azurelinux3; do
+      kubectl -n kube-system set image "daemonset/csi-azurelustre-node-${f}" \
+          "azurelustre=<alias>csiacr.azurecr.io/azurelustre-csi:latest-${f}"
+  done
+  ```
+
+&nbsp;
+
 ## DALEC image builds
 
 Production images are built through [DALEC](https://github.com/Azure/dalec-build-defs),

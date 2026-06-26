@@ -28,13 +28,18 @@ helm uninstall azurelustre -n kube-system
 ```
 
 > [!IMPORTANT]
-> **Migrating from a `kubectl` install to Helm.** Helm only adopts resources it
-> created. If the driver was previously installed with `kubectl` /
-> `install-driver.sh`, the cluster-scoped objects (the
-> `azurelustre.csi.azure.com` CSIDriver and the `csi-azurelustre-*` ClusterRoles)
-> have no Helm ownership metadata, so `helm install` aborts with an
+> **Migrating from a `kubectl` install to Helm.** Helm only adopts resources that
+> carry its ownership metadata. If the driver was previously installed with
+> `kubectl` / `install-driver.sh`, then with the chart's default release name and
+> values the first thing `helm install` trips on is the `azurelustre.csi.azure.com`
+> CSIDriver object -- its name is identical under both install methods but it has
+> no Helm ownership metadata -- so the install aborts with an
 > `invalid ownership metadata ... missing key "app.kubernetes.io/managed-by"`
-> error. Remove the existing `kubectl` install first, then install with Helm:
+> error. (At the default name the RBAC objects do not collide: Helm names them
+> `<release>-azurelustre-csi-driver-*` versus the installer's `csi-azurelustre-*`,
+> so they would be duplicated rather than conflict -- though a `fullnameOverride`
+> matching the installer's names would make them collide too.) Either way, remove
+> the existing `kubectl` install first, then install with Helm:
 >
 > ```shell
 > ./deploy/uninstall-driver.sh
